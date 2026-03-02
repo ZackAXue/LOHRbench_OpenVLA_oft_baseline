@@ -846,6 +846,15 @@ def aloha_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     return trajectory
 
 
+def lohrbench_rlds_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    # Drop 8th action dimension (8D → 7D)
+    trajectory["action"] = trajectory["action"][:, :7]
+    # Construct proprio state keys from qpos (9D → 6D + 2D = 8D = PROPRIO_DIM)
+    trajectory["observation"]["EEF_state"] = trajectory["observation"]["qpos"][:, :6]
+    trajectory["observation"]["gripper_state"] = trajectory["observation"]["qpos"][:, 6:8]
+    return trajectory
+
+
 # === Registry ===
 OXE_STANDARDIZATION_TRANSFORMS = {
     "bridge_oxe": bridge_oxe_dataset_transform,
@@ -930,4 +939,7 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "aloha1_fold_shirt_30_demos": aloha_dataset_transform,
     "aloha1_scoop_X_into_bowl_45_demos": aloha_dataset_transform,
     "aloha1_put_X_into_pot_300_demos": aloha_dataset_transform,
+    ### LoHRbench datasets
+    "lohrbench_rlds": lohrbench_rlds_dataset_transform,
+    "lohrbench_rlds_delta7": lohrbench_rlds_dataset_transform,
 }

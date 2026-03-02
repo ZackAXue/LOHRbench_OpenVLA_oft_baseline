@@ -213,6 +213,11 @@ OXE_NAMED_MIXTURES: Dict[str, List[Tuple[str, float]]] = {
         ("libero_10_no_noops", 1.0),
     ],
 
+    # === LoHRbench Datasets ===
+    "lohrbench_rlds": [
+        ("lohrbench_rlds_delta7", 1.0),
+    ],
+
     # === ALOHA Fine-Tuning Datasets ===
     "aloha1_fold_shorts_20_demos": [
         ("aloha1_fold_shorts_20_demos", 1.0),

@@ -199,7 +199,24 @@ def make_dataset_from_rlds(
 
         return traj
 
-    builder = tfds.builder(name, data_dir=data_dir)
+    try:
+        builder = tfds.builder(name, data_dir=data_dir)
+    except Exception:
+        # Fallback for custom RLDS datasets not registered with TFDS
+        import glob as _glob
+        import os as _os
+
+        candidates = sorted(_glob.glob(_os.path.join(data_dir, name, "*", "*", "dataset_info.json")))
+        if not candidates:
+            candidates = sorted(_glob.glob(_os.path.join(data_dir, name, "*", "dataset_info.json")))
+        if not candidates:
+            # Also search as a TFDS config name nested under a builder directory
+            candidates = sorted(_glob.glob(_os.path.join(data_dir, "*", name, "*", "dataset_info.json")))
+        if candidates:
+            rlds_dir = _os.path.dirname(candidates[-1])  # use latest version
+            builder = tfds.builder_from_directory(rlds_dir)
+        else:
+            raise
 
     # load or compute dataset statistics
     if isinstance(dataset_statistics, str):
