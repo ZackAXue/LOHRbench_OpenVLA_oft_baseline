@@ -847,11 +847,19 @@ def aloha_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def lohrbench_rlds_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # Drop 8th action dimension (8D → 7D)
-    trajectory["action"] = trajectory["action"][:, :7]
-    # Construct proprio state keys from qpos (9D → 6D + 2D = 8D = PROPRIO_DIM)
-    trajectory["observation"]["EEF_state"] = trajectory["observation"]["qpos"][:, :6]
-    trajectory["observation"]["gripper_state"] = trajectory["observation"]["qpos"][:, 6:8]
+    trajectory["action"] = trajectory["action"]
+    # qpos is 9D: 7 joint angles + 2 gripper finger widths (Franka Panda)
+    # Construct proprio: 7 joint angles + 1 gripper finger = 8D = PROPRIO_DIM
+    trajectory["observation"]["joint_state"] = trajectory["observation"]["qpos"][:, :7]
+    trajectory["observation"]["gripper_state"] = trajectory["observation"]["qpos"][:, 7:8]
+    return trajectory
+
+
+def lohrbench_rlds_delta7_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    # lohrbench_rlds_delta7 already has 7D actions — no slicing needed
+    tf.debugging.assert_equal(
+        tf.shape(trajectory["action"])[-1], 7, message="Expected 7D actions for lohrbench_rlds_delta7"
+    )
     return trajectory
 
 
@@ -941,5 +949,5 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "aloha1_put_X_into_pot_300_demos": aloha_dataset_transform,
     ### LoHRbench datasets
     "lohrbench_rlds": lohrbench_rlds_dataset_transform,
-    "lohrbench_rlds_delta7": lohrbench_rlds_dataset_transform,
+    "lohrbench_rlds_delta7": lohrbench_rlds_delta7_dataset_transform,
 }

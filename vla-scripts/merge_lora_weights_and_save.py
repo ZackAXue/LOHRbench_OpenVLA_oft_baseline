@@ -55,6 +55,7 @@ def main(cfg: ConvertConfig) -> None:
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
+        attn_implementation="flash_attention_2",
     )
 
     # Load LoRA weights and merge into base model, then save final checkpoint

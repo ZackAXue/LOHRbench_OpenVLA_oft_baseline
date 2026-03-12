@@ -710,15 +710,15 @@ OXE_DATASET_CONFIGS = {
     "lohrbench_rlds": {
         "image_obs_keys": {"primary": "base_rgb", "secondary": None, "wrist": "hand_rgb"},
         "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
-        "state_obs_keys": ["EEF_state", "gripper_state"],
-        "state_encoding": StateEncoding.POS_EULER,
+        "state_obs_keys": [],
+        "state_encoding": StateEncoding.NONE,
         "action_encoding": ActionEncoding.EEF_POS,
     },
     "lohrbench_rlds_delta7": {
         "image_obs_keys": {"primary": "base_rgb", "secondary": None, "wrist": "hand_rgb"},
         "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
-        "state_obs_keys": ["EEF_state", "gripper_state"],
-        "state_encoding": StateEncoding.POS_EULER,
+        "state_obs_keys": [],
+        "state_encoding": StateEncoding.NONE,
         "action_encoding": ActionEncoding.EEF_POS,
     },
 }

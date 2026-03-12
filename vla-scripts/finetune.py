@@ -582,6 +582,8 @@ def save_training_checkpoint(
     action_head,
     train_dataset,
     distributed_state,
+    optimizer=None,
+    scheduler=None,
 ) -> None:
     """
     Save all training checkpoints including model components, LoRA adapter, and dataset statistics.
@@ -597,6 +599,8 @@ def save_training_checkpoint(
         action_head (nn.Module): Action head module.
         train_dataset (RLDSDataset): Training dataset.
         distributed_state (PartialState): Distributed training state.
+        optimizer (torch.optim.Optimizer, optional): Optimizer to save state dict.
+        scheduler (torch.optim.lr_scheduler._LRScheduler, optional): LR scheduler to save state dict.
 
     Returns:
         None.
@@ -644,6 +648,12 @@ def save_training_checkpoint(
             torch.save(
                 vla.module.vision_backbone.state_dict(), checkpoint_dir / f"vision_backbone--{checkpoint_name_suffix}"
             )
+
+        # Save optimizer and scheduler state for proper resume
+        if optimizer is not None:
+            torch.save(optimizer.state_dict(), checkpoint_dir / f"optimizer--{checkpoint_name_suffix}")
+        if scheduler is not None:
+            torch.save(scheduler.state_dict(), checkpoint_dir / f"scheduler--{checkpoint_name_suffix}")
 
     # Wait for model components to be saved
     dist.barrier()
@@ -837,6 +847,7 @@ def finetune(cfg: FinetuneConfig) -> None:
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
+        attn_implementation="flash_attention_2",
     ).to(device_id)
 
     # Set number of images in VLA input
@@ -943,6 +954,21 @@ def finetune(cfg: FinetuneConfig) -> None:
         milestones=[cfg.num_steps_before_decay],  # Number of steps after which LR will change
         gamma=0.1,  # Multiplicative factor of learning rate decay
     )
+
+    # Restore optimizer and scheduler state on resume
+    if cfg.resume:
+        optim_path = os.path.join(cfg.vla_path, f"optimizer--{cfg.resume_step}_checkpoint.pt")
+        sched_path = os.path.join(cfg.vla_path, f"scheduler--{cfg.resume_step}_checkpoint.pt")
+        if os.path.exists(optim_path):
+            print(f"Loading optimizer state: {optim_path}")
+            optimizer.load_state_dict(torch.load(optim_path, weights_only=True, map_location=f"cuda:{device_id}"))
+        else:
+            print(f"WARNING: Optimizer checkpoint not found at {optim_path}, starting with fresh optimizer state")
+        if os.path.exists(sched_path):
+            print(f"Loading scheduler state: {sched_path}")
+            scheduler.load_state_dict(torch.load(sched_path, weights_only=False, map_location="cpu"))
+        else:
+            print(f"WARNING: Scheduler checkpoint not found at {sched_path}, starting with fresh scheduler state")
 
     # Create Action Tokenizer
     action_tokenizer = ActionTokenizer(processor.tokenizer)
@@ -1093,6 +1119,7 @@ def finetune(cfg: FinetuneConfig) -> None:
 
             # Optimizer and LR scheduler step
             if (batch_idx + 1) % cfg.grad_accumulation_steps == 0:
+                torch.nn.utils.clip_grad_norm_(trainable_params, max_norm=1.0)
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
@@ -1111,6 +1138,8 @@ def finetune(cfg: FinetuneConfig) -> None:
                     action_head=action_head if (cfg.use_l1_regression or cfg.use_diffusion) else None,
                     train_dataset=train_dataset,
                     distributed_state=distributed_state,
+                    optimizer=optimizer,
+                    scheduler=scheduler,
                 )
 
             # Test model on validation set
