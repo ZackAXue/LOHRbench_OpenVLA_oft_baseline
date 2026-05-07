@@ -1,6 +1,6 @@
 # Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success
 
-**Project website: https://openvla-oft.github.io/**
+
 
 **Paper: https://arxiv.org/abs/2502.19645**
 
