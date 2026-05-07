@@ -118,7 +118,7 @@ python vla-scripts/merge_lora_weights_and_save.py \
 
 ## Evaluation
 
-Evaluation is done via the unified evaluation framework in [`TAMPBench/baseline/`](../TAMPBench/baseline/). See the [evaluation README](../TAMPBench/baseline/README.md) for details.
+Evaluation is done via the unified evaluation framework in [`LoHRbench/baseline/`](../LoHRbench/baseline/). See the [evaluation README](../LoHRbench/baseline/README.md) for details.
 
 ```bash
 python baseline/eval.py \
@@ -150,7 +150,7 @@ python baseline/eval.py \
 ## Acknowledgements
 
 The OpenVLA-OFT implementation is adapted from [openvla-oft](https://github.com/moojink/openvla-oft)
-(Kim, Finn, Liang — arXiv:2502.19645) with LoHRbench dataset wiring and the unified TAMPBench evaluation interface.
+(Kim, Finn, Liang — arXiv:2502.19645) with LoHRbench dataset wiring and the unified LoHRbench evaluation interface.
 
 ```bibtex
 @article{kim2025fine,
