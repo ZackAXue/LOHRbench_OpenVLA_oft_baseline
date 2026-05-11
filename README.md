@@ -106,7 +106,7 @@ torchrun --standalone --nnodes 1 --nproc-per-node X vla-scripts/finetune.py \
 | LoRA dropout | 0.0 |
 | Precision | bfloat16 |
 | Image augmentation | Random crop (90% area) |
-| GPU | 8× NVIDIA A100 80GB (~62 GB/GPU at bs=8; ~25 GB/GPU at bs=1) |
+| GPU | 4× NVIDIA A100 40GB|
 
 After training, optionally merge the LoRA adapter into the base model:
 
