@@ -33,7 +33,6 @@ dependencies = [
     "accelerate>=0.25.0",
     "draccus==0.8.0",
     "einops",
-    # "flash_attn==2.5.5",      # Here for documentation -- install *AFTER* editable install (follow README)
     "huggingface_hub",
     "json-numpy",
     "jsonlines",
@@ -47,7 +46,7 @@ dependencies = [
     "torch==2.2.0",
     "torchvision==0.17.0",
     "torchaudio==2.2.0",
-    "transformers @ git+https://github.com/moojink/transformers-openvla-oft.git",  # IMPORTANT: Use this fork for bidirectional attn (for parallel decoding)
+    "transformers==4.40.1",  # Standard causal SDPA; explicit bidirectional compatibility setup: ATTENTION.md
     "wandb",
     "tensorflow==2.15.0",
     "tensorflow_datasets==4.9.3",

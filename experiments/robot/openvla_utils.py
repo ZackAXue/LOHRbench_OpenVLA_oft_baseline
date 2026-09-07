@@ -27,6 +27,7 @@ from prismatic.extern.hf.processing_prismatic import PrismaticImageProcessor, Pr
 from prismatic.models.action_heads import DiffusionActionHead, L1RegressionActionHead
 from prismatic.models.film_vit_wrapper import FiLMedPrismaticVisionBackbone
 from prismatic.models.projectors import NoisyActionProjector, ProprioProjector
+from prismatic.util.attention import load_vla_with_attention
 from prismatic.vla.constants import (
     ACTION_DIM,
     ACTION_PROPRIO_NORMALIZATION_TYPE,
@@ -279,9 +280,10 @@ def get_vla(cfg: Any) -> torch.nn.Module:
         check_model_logic_mismatch(cfg.pretrained_checkpoint)
 
     # Load the model
-    vla = AutoModelForVision2Seq.from_pretrained(
+    vla = load_vla_with_attention(
         cfg.pretrained_checkpoint,
-        # attn_implementation="flash_attention_2",
+        attention_mode=getattr(cfg, "attention_mode", None),
+        attn_implementation=getattr(cfg, "attn_implementation", "sdpa"),
         torch_dtype=torch.bfloat16,
         load_in_8bit=cfg.load_in_8bit,
         load_in_4bit=cfg.load_in_4bit,

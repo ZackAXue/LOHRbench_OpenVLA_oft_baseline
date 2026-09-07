@@ -18,7 +18,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import draccus
 import torch
@@ -28,11 +28,13 @@ from transformers import AutoConfig, AutoImageProcessor, AutoModelForVision2Seq,
 from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
 from prismatic.extern.hf.modeling_prismatic import OpenVLAForActionPrediction
 from prismatic.extern.hf.processing_prismatic import PrismaticImageProcessor, PrismaticProcessor
+from prismatic.util.attention import load_vla_with_attention, save_attention_metadata
 
 
 @dataclass
 class ConvertConfig:
     # fmt: off
+    attention_mode: Optional[str] = None                   # Read adapter metadata, or explicitly select legacy mode
 
     base_checkpoint: Union[str, Path] = ""                   # Base model checkpoint path/dir (either openvla/openvla-7b or whichever model you fine-tuned / resumed training from)
     lora_finetuned_checkpoint_dir: Union[str, Path] = ""     # Checkpoint directory containing the LoRA adapter
@@ -50,8 +52,10 @@ def main(cfg: ConvertConfig) -> None:
 
     # Load Model using HF AutoClasses
     print(f"Loading base model: {cfg.base_checkpoint}")
-    vla = AutoModelForVision2Seq.from_pretrained(
+    vla = load_vla_with_attention(
         cfg.base_checkpoint,
+        attention_mode=cfg.attention_mode,
+        attention_checkpoint=cfg.lora_finetuned_checkpoint_dir,
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
@@ -65,6 +69,7 @@ def main(cfg: ConvertConfig) -> None:
     )
     merged_vla = merged_vla.merge_and_unload()
     merged_vla.save_pretrained(cfg.lora_finetuned_checkpoint_dir)
+    save_attention_metadata(cfg.lora_finetuned_checkpoint_dir, vla.config.openvla_attention_mode)
     print(f"\nMerging complete! Time elapsed (sec): {time.time() - start_time}")
     print(f"\nSaved merged model checkpoint at:\n{cfg.lora_finetuned_checkpoint_dir}")
 

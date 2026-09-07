@@ -50,6 +50,7 @@ from prismatic.training.train_utils import (
     get_current_action_mask,
     get_next_actions_mask,
 )
+from prismatic.util.attention import load_vla_with_attention, save_attention_metadata
 from prismatic.util.data_utils import PaddedCollatorForActionPrediction
 from prismatic.vla.action_tokenizer import ActionTokenizer
 from prismatic.vla.constants import (
@@ -69,6 +70,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 class FinetuneConfig:
     # fmt: off
     vla_path: str = "openvla/openvla-7b"             # Path to OpenVLA model (on HuggingFace Hub or stored locally)
+
+    attention_mode: Optional[str] = None             # Explicit for legacy checkpoints; otherwise read saved metadata
 
     # Dataset
     data_root_dir: Path = Path("datasets/rlds")      # Directory containing RLDS datasets
@@ -626,6 +629,8 @@ def save_training_checkpoint(
         # Save processor and LoRA adapter
         processor.save_pretrained(checkpoint_dir)
         vla.module.save_pretrained(adapter_dir)
+        save_attention_metadata(checkpoint_dir, cfg.attention_mode)
+        save_attention_metadata(adapter_dir, cfg.attention_mode)
 
         # Save other components
         if cfg.use_proprio and proprio_projector is not None:
@@ -651,14 +656,16 @@ def save_training_checkpoint(
     # Merge LoRA weights into base model and save resulting model checkpoint
     # Note: Can be very slow on some devices; if so, we recommend merging offline
     if cfg.use_lora and cfg.merge_lora_during_training:
-        base_vla = AutoModelForVision2Seq.from_pretrained(
-            cfg.vla_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, trust_remote_code=True
+        base_vla = load_vla_with_attention(
+            cfg.vla_path, attention_mode=cfg.attention_mode, attention_checkpoint=checkpoint_dir,
+            torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, trust_remote_code=True
         )
         merged_vla = PeftModel.from_pretrained(base_vla, adapter_dir)
         merged_vla = merged_vla.merge_and_unload()
 
         if distributed_state.is_main_process:
             merged_vla.save_pretrained(checkpoint_dir)
+            save_attention_metadata(checkpoint_dir, cfg.attention_mode)
             print(f"Saved merged model for Step {log_step} at: {checkpoint_dir}")
 
         # Wait for merged model to be saved
@@ -832,12 +839,15 @@ def finetune(cfg: FinetuneConfig) -> None:
 
     # Load processor and VLA
     processor = AutoProcessor.from_pretrained(cfg.vla_path, trust_remote_code=True)
-    vla = AutoModelForVision2Seq.from_pretrained(
+    vla = load_vla_with_attention(
         cfg.vla_path,
+        attention_mode=cfg.attention_mode,
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
     ).to(device_id)
+
+    cfg.attention_mode = vla.config.openvla_attention_mode
 
     # Set number of images in VLA input
     vla.vision_backbone.set_num_images_in_input(cfg.num_images_in_input)

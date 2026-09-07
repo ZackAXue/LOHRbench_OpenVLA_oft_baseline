@@ -82,6 +82,7 @@ def _get_project_imports():
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--pretrained_checkpoint", type=str, required=True)
+    p.add_argument("--attention_mode", choices=["causal", "bidirectional"], default=None)
     p.add_argument("--data_root_dir", type=str, required=True)
     p.add_argument("--dataset_name", type=str, default="lohrbench_rlds")
     p.add_argument("--unnorm_key", type=str, default="lohrbench_rlds")

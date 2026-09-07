@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class GenerateConfig:
+    attention_mode: Optional[str] = None  # Saved checkpoint mode, or explicit choice for legacy checkpoints
     # fmt: off
 
     #################################################################################################################

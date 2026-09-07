@@ -43,15 +43,14 @@ pip3 install torch torchvision torchaudio
 
 # Install OpenVLA-OFT in editable mode
 pip install -e .
-
-# Install Flash Attention 2 for training
-pip install packaging ninja
-pip install "flash-attn==2.5.5" --no-build-isolation
 ```
 
-> Note: `pip install -e .` pulls a custom `transformers` fork
-> (`git+https://github.com/moojink/transformers-openvla-oft.git`) that enables
-> bidirectional attention for parallel decoding — required for OFT.
+Attention mode must match the checkpoint. The default installation now uses
+standard **Transformers 4.40.1 causal SDPA**; standalone `flash-attn` is not
+required. Legacy checkpoints must explicitly select `--attention_mode causal`
+or `bidirectional`. The loader checks actual attention behavior and rejects
+mismatches. See [ATTENTION.md](ATTENTION.md) for migration, the explicit OFT-fork
+bidirectional setup, checkpoint metadata and regression tests.
 
 ## Dataset
 
@@ -65,6 +64,7 @@ RLDS before fine-tuning, then place the resulting datasets under `--data_root_di
 ```bash
 torchrun --standalone --nnodes 1 --nproc-per-node X vla-scripts/finetune.py \
     --vla_path openvla/openvla-7b \
+    --attention_mode causal \
     --data_root_dir /path/to/lohrbench/rlds \
     --dataset_name lohrbench_<suite> \
     --run_root_dir /path/to/checkpoints \
@@ -92,7 +92,7 @@ torchrun --standalone --nnodes 1 --nproc-per-node X vla-scripts/finetune.py \
 | Base model | OpenVLA-7B (`openvla/openvla-7b`) |
 | Vision backbone | DINOv2 + SigLIP (PrismaticVisionBackbone, 224×224) |
 | Action head | L1 regression MLP (continuous actions) |
-| Language conditioning | Llama-2 7B with bidirectional attention (parallel decoding) |
+| Language conditioning | Llama-2 7B; explicitly selected and checkpoint-persisted causal/bidirectional SDPA |
 | FiLM | Disabled (set `--use_film True` for stronger language grounding) |
 | Input images | 2 (base camera + wrist camera) |
 | Proprio input | True (joint state) |

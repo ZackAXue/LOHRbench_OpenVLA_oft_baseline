@@ -109,6 +109,7 @@ class OpenVLAServer:
 
 @dataclass
 class DeployConfig:
+    attention_mode: Optional[str] = None  # Saved checkpoint mode, or explicit choice for legacy checkpoints
     # fmt: off
 
     # Server Configuration
